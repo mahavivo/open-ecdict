@@ -86,30 +86,36 @@ def build_index_from_file_2(filepath):
     """为源文件2构建索引 (音标格式: /.../ -> [...])。"""
     print(f"--- 正在为 {filepath} 构建索引 ---")
     index = {}
-    headword_pattern = re.compile(r"^([\w\s'-]+?)\s*((?:/|\s{2,}).*)")
+    separator = '⇒'
     pron_pattern = re.compile(r"\/(.*?)\/")
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
-                if not line: continue
-                match = headword_pattern.match(line)
-                if match:
-                    headword, full_def = match.group(1).strip(), match.group(2).strip()
-                    pron, definition = None, full_def
-                    pron_match = pron_pattern.search(full_def)
-                    if pron_match:
-                        pron = f"[{pron_match.group(1)}]"
-                        definition = full_def.replace(pron_match.group(0), '').strip()
-                    if headword:
-                        if headword in index:
-                            index[headword]['def'] += f" | {definition}"
-                            if not index[headword]['pron'] and pron:
-                                index[headword]['pron'] = pron
-                        else:
-                            index[headword] = {"pron": pron, "def": definition}
+                if not line or separator not in line:
+                    continue
+                
+                parts = line.split(separator, 1)
+                headword = parts[0].strip()
+                full_def = parts[1].strip()
+                
+                pron, definition = None, full_def
+                pron_match = pron_pattern.search(full_def)
+                if pron_match:
+                    pron = f"[{pron_match.group(1)}]"
+                    definition = full_def.replace(pron_match.group(0), '').strip()
+                
+                if headword:
+                    if headword in index:
+                        index[headword]['def'] += f" | {definition}"
+                        if not index[headword]['pron'] and pron:
+                            index[headword]['pron'] = pron
+                    else:
+                        index[headword] = {"def": definition, "pron": pron}
+
     except FileNotFoundError:
         print(f"❌ 错误: 文件未找到 {filepath}"); return None
+    
     print(f"构建完成，共索引 {len(index)} 个词条。")
     return index
 
